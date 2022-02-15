@@ -18,7 +18,6 @@ void motorCallback(vanttec::CANHandler &handler, const std_msgs::Float32MultiArr
 
     for(int i = 0; i < msg->data.size(); i++){
         if(msg->data[i] == lastArray[i]) continue;
-        ROS_INFO("Sending motor message");
         vanttec::CANMessage canMsg;
         uint8_t id = 0x15 + i;
         vanttec::packFloat(canMsg, id, msg->data[i]);
@@ -53,6 +52,8 @@ int main(int argc, char **argv) {
 
     vanttec::CANHandler handler("can0");
 
+    ROS_INFO("Vanttec CAN Bus Comms started!");
+
     auto can_bus_ros_parser = [&](uint8_t id, can_frame frame){
         ROS_INFO("Recieved CAN MSG from id %d", id);
     };
@@ -78,10 +79,10 @@ int main(int argc, char **argv) {
     });
 
     std::thread hb_write_thread([&]{
-        ros::Rate rate(1); //1Hz
+        ros::Rate rate(3); //3Hz
         while(runThreads.load() && ros::ok()){
             vanttec::CANMessage msg;
-            msg.len = can_pack_byte(0x1E, 0xFF, msg.data, msg.len);
+            vanttec::packByte(msg, 0x1E, 0xFF);
             handler.write(msg);
             rate.sleep();
         }
@@ -101,7 +102,9 @@ int main(int argc, char **argv) {
     });
 
     ros::spin();
-    runThreads.store(true);
+
+    //Process has stopped!
+    runThreads.store(false);
     update_read_thread.join();
     update_write_thread.join();
     hb_write_thread.join();

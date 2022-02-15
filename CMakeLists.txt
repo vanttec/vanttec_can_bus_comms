@@ -3,6 +3,7 @@ project(vanttec_can_bus_comms)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++14)
+#add_compile_options(-pg)
 set(ROS_BUILD_TYPE Debug)
 
 ## Find catkin macros and libraries
