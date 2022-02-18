@@ -5,6 +5,7 @@
 #include <std_msgs/Int16.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/MultiArrayDimension.h>
+#include <std_msgs/Float32.h>
 #include "Vanttec_CANLib/Utils/CANDeserialization.h"
 #include "Vanttec_CANLib/Utils/CANSerialization.h"
 #include "Vanttec_CANLib_Linux/CANHandler.h"
@@ -46,6 +47,13 @@ void handleDebugMsg(can_frame frame){
     }
 }
 
+void handlePingMsg(ros::Publisher &pub, can_frame frame){
+    //ROS_INFO("GOT PING");
+    std_msgs::Float32 msg;
+    msg.data = 0;
+    pub.publish(msg);
+}
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "vanttec_can_bus_comms_node");
     ros::NodeHandle n;
@@ -61,7 +69,6 @@ int main(int argc, char **argv) {
     //handler.register_parser(can_bus_ros_parser);
 
     handler.register_parser(0x14, handleDebugMsg);
-
     // auto can_bus_parser = [&](uint8_t id, can_frame frame){
     //     if(id == 0x14) handleDebugMsg(frame);
     // };
@@ -88,11 +95,24 @@ int main(int argc, char **argv) {
         }
     });
 
+    std::thread ping_thread([&]{
+        ros::Rate rate(200); //200Hz
+        while(runThreads.load() && ros::ok()){
+            vanttec::CANMessage msg;
+            vanttec::packFloat(msg, 0x1F, 0.01);
+            handler.write(msg);
+            rate.sleep();
+        }
+    });
+
     auto motorSub = n.subscribe<std_msgs::Float32MultiArray>("motors", 10, [&](const std_msgs::Float32MultiArrayConstPtr &msg){
         motorCallback(handler, msg);
     });
 
     auto hbPub = n.advertise<std_msgs::Int16>("stm32_heartbeat", 100);
+    auto pingPub = n.advertise<std_msgs::Float32>("stm32_ping",1000);
+
+    handler.register_parser(0x1f, std::bind(&handlePingMsg, pingPub, std::placeholders::_1));
 
     handler.register_parser(0x01, [hbPub](can_frame frame){
         std_msgs::Int16 msg;
