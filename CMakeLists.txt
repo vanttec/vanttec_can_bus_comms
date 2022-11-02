@@ -139,6 +139,7 @@ add_subdirectory(libs/vanttec_CANLib)
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(${PROJECT_NAME}_node src/main.cpp)
+add_executable(${PROJECT_NAME}_cmd_vel src/utils/cmd_vel_controller.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -155,6 +156,10 @@ target_link_libraries(${PROJECT_NAME}_node
    ${catkin_LIBRARIES}
    Vanttec_CANLibLIB
 )
+
+target_link_libraries(${PROJECT_NAME}_cmd_vel
+        ${catkin_LIBRARIES}
+        )
 
 #############
 ## Install ##
