@@ -26,7 +26,7 @@ float map_thruster(float in){
 
 void update_thrust(ros::Publisher &pub, float left_thrust, float right_thrust){
   std_msgs::Float32MultiArray msg;
-  msg.data = std::vector<float>{left_thrust, right_thrust, 0,0,0,0,0,0};
+  msg.data = std::vector<float>{right_thrust, -left_thrust, 0,0,0,0,0,0};
   pub.publish(msg);
 }
 
